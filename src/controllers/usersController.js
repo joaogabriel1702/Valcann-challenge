@@ -2,7 +2,7 @@ const usersData = require('../data/mock-users.json');
 
 const getUsers = (req, res) => {
   try {
-    
+
     let { page = 1, page_size = 10, q, role, is_active } = req.query;
 
     page = parseInt(page);
@@ -71,11 +71,31 @@ const getUsers = (req, res) => {
 };
 
 const getUserById = (req, res) => {
-  const user = usersData.find(u => u.id === parseInt(req.params.id));
-  if (!user) {
-    return res.status(404).json({ error: 'Usuário não encontrado' });
+  try {
+    const userId = parseInt(req.params.id);
+    
+    if (isNaN(userId)) {
+      return res.status(400).json({
+        error: 'ID deve ser um número válido'
+      });
+    }
+    
+    const user = usersData.find(u => u.id === userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        error: 'Usuário não encontrado'
+      });
+    }
+    
+    res.json(user);
+    
+  } catch (error) {
+    console.error('Erro ao buscar usuário:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor'
+    });
   }
-  res.json(user);
 };
 
 module.exports = {
