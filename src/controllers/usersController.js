@@ -2,15 +2,17 @@ const usersData = require('../data/mock-users.json');
 
 const getUsers = (req, res) => {
   try {
+    const DEFAULT_PAGE = parseInt(process.env.DEFAULT_PAGE) || 1;
+    const DEFAULT_PAGE_SIZE = parseInt(process.env.DEFAULT_PAGE_SIZE) || 10;
+    const MAX_PAGE_SIZE = parseInt(process.env.MAX_PAGE_SIZE) || 50;
+    let { page = DEFAULT_PAGE, page_size = DEFAULT_PAGE_SIZE, q, role, is_active } = req.query;
 
-    let { page = 1, page_size = 10, q, role, is_active } = req.query;
+    page = parseInt(page, 10);
+    page_size = parseInt(page_size, 10);
 
-    page = parseInt(page);
-    page_size = parseInt(page_size);
-
-    if (page_size > 50) {
+    if (page_size > MAX_PAGE_SIZE) {
       return res.status(400).json({
-        error: 'O tamanho da página não pode exceder 50'
+        error: `O tamanho da página não pode exceder ${MAX_PAGE_SIZE}`
       });
     }
 
@@ -25,16 +27,12 @@ const getUsers = (req, res) => {
     }
 
     if (role) {
-      filteredUsers = filteredUsers.filter(user =>
-        user.role === role
-      );
+      filteredUsers = filteredUsers.filter(user => user.role === role);
     }
 
     if (is_active !== undefined) {
       const isActiveBool = is_active === 'true';
-      filteredUsers = filteredUsers.filter(user =>
-        user.is_active === isActiveBool
-      );
+      filteredUsers = filteredUsers.filter(user => user.is_active === isActiveBool);
     }
 
     const totalItems = filteredUsers.length;
@@ -47,10 +45,9 @@ const getUsers = (req, res) => {
     }
 
     const startIndex = (page - 1) * page_size;
-    const endIndex = Math.min(startIndex + page_size, totalItems);
-    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+    const paginatedUsers = filteredUsers.slice(startIndex, startIndex + page_size);
 
-    res.json({
+    return res.json({
       data: paginatedUsers,
       pagination: {
         page,
@@ -64,9 +61,7 @@ const getUsers = (req, res) => {
 
   } catch (error) {
     console.error('Erro ao processar requisição:', error);
-    res.status(500).json({
-      error: 'Erro interno do servidor'
-    });
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
 
@@ -84,11 +79,14 @@ const getUserById = (req, res) => {
     
     if (!user) {
       return res.status(404).json({
-        error: 'Usuário não encontrado'
+        error: 'Usuário não encontrado',
+        user_id: userId
       });
     }
     
-    res.json(user);
+    res.json({
+      data: user
+    });
     
   } catch (error) {
     console.error('Erro ao buscar usuário:', error);
